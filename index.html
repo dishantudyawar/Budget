@@ -30,7 +30,7 @@
             margin: 0 auto;
         }
 
-        h2, h3 {
+        h3 {
             margin-top: 0;
             font-weight: 700;
         }
@@ -206,12 +206,12 @@
 </div>
 
 <script>
-    // System setup definition
-    const initialStartingData = {
-        balance: 50768,
-        totalInvested: 8000,
-        lastSalaryProcess: "2026-05", // May salary is skipped as requested
-        lastSipProcess: "2026-04",    // Kept at April so May 15th SIP triggers right away
+    // Exact requested math state applied post-SIP deduction today
+    const baselineData = {
+        balance: 49768,       // 50,768 (yesterday) minus 1,000 (SIP deducted today)
+        totalInvested: 9000,  // 8,000 baseline plus 1,000 (SIP deducted today)
+        lastSalaryProcess: "2026-05", 
+        lastSipProcess: "2026-05",    
         goals: [
             { id: 1, text: "Save up for emergency fund", done: false },
             { id: 2, text: "Complete Goa trip payments", done: true }
@@ -239,21 +239,23 @@
                 { type: "expense", amount: 1407, desc: "Combined April Expenses" }
             ],
             "May 2026": [
+                { type: "investment", amount: 1000, desc: "Automated SIP Deduction (May 15th)" },
                 { type: "expense", amount: 500, desc: "Expense" },
                 { type: "expense", amount: 10660, desc: "Goa Main Settlement" }
             ]
         }
     };
 
-    let state = JSON.parse(localStorage.getItem('my_budget_data'));
+    // Forced fresh storage key to override broken local browser caches
+    let state = JSON.parse(localStorage.getItem('my_brand_new_budget_v2'));
 
     if (!state) {
-        state = initialStartingData;
-        localStorage.setItem('my_budget_data', JSON.stringify(state));
+        state = baselineData;
+        localStorage.setItem('my_brand_new_budget_v2', JSON.stringify(state));
     }
 
     function saveState() {
-        localStorage.setItem('my_budget_data', JSON.stringify(state));
+        localStorage.setItem('my_brand_new_budget_v2', JSON.stringify(state));
         updateUI();
     }
 
@@ -268,7 +270,7 @@
             state.history[currentMonthKey] = [];
         }
 
-        // 1st of Month Automation
+        // 1st of Month Salary Automation (Starts running on June 1st)
         if (state.lastSalaryProcess !== currentYearMonth && day >= 1) {
             state.balance += 14000;
             state.history[currentMonthKey].unshift({
@@ -280,7 +282,7 @@
             saveState();
         }
 
-        // 15th of Month Automation
+        // 15th of Month SIP Automation (Starts running on June 15th)
         if (state.lastSipProcess !== currentYearMonth && day >= 15) {
             state.balance -= 1000;
             state.totalInvested += 1000;
@@ -387,7 +389,6 @@
         saveState();
     }
 
-    // Run setup checking rules
     checkAutomations();
     updateUI();
 </script>
