@@ -206,12 +206,12 @@
 </div>
 
 <script>
-    // System setup definition (Only deployed if the device storage is empty)
+    // System setup definition
     const initialStartingData = {
         balance: 50768,
         totalInvested: 8000,
-        lastSalaryProcess: "2026-04", // Set to April so it registers May automations instantly
-        lastSipProcess: "2026-04",
+        lastSalaryProcess: "2026-05", // May salary is skipped as requested
+        lastSipProcess: "2026-04",    // Kept at April so May 15th SIP triggers right away
         goals: [
             { id: 1, text: "Save up for emergency fund", done: false },
             { id: 2, text: "Complete Goa trip payments", done: true }
@@ -239,14 +239,12 @@
                 { type: "expense", amount: 1407, desc: "Combined April Expenses" }
             ],
             "May 2026": [
-                { type: "income", amount: 14000, desc: "Monthly Salary" },
                 { type: "expense", amount: 500, desc: "Expense" },
                 { type: "expense", amount: 10660, desc: "Goa Main Settlement" }
             ]
         }
     };
 
-    // FIXED LOGIC: Strict priority to existing saved device data over defaults
     let state = JSON.parse(localStorage.getItem('my_budget_data'));
 
     if (!state) {
