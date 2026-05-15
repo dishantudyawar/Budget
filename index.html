@@ -206,11 +206,11 @@
 </div>
 
 <script>
-    // Initializing state with your real historical tracking data
-    const defaultState = {
+    // System setup definition (Only deployed if the device storage is empty)
+    const initialStartingData = {
         balance: 50768,
         totalInvested: 8000,
-        lastSalaryProcess: "2026-04", // To avoid repeating standard inputs on the same month
+        lastSalaryProcess: "2026-04", // Set to April so it registers May automations instantly
         lastSipProcess: "2026-04",
         goals: [
             { id: 1, text: "Save up for emergency fund", done: false },
@@ -246,7 +246,13 @@
         }
     };
 
-    let state = JSON.parse(localStorage.getItem('my_budget_data')) || defaultState;
+    // FIXED LOGIC: Strict priority to existing saved device data over defaults
+    let state = JSON.parse(localStorage.getItem('my_budget_data'));
+
+    if (!state) {
+        state = initialStartingData;
+        localStorage.setItem('my_budget_data', JSON.stringify(state));
+    }
 
     function saveState() {
         localStorage.setItem('my_budget_data', JSON.stringify(state));
@@ -264,7 +270,7 @@
             state.history[currentMonthKey] = [];
         }
 
-        // 1st of Month Automation: Add 14,000 Income
+        // 1st of Month Automation
         if (state.lastSalaryProcess !== currentYearMonth && day >= 1) {
             state.balance += 14000;
             state.history[currentMonthKey].unshift({
@@ -276,7 +282,7 @@
             saveState();
         }
 
-        // 15th of Month Automation: Deduct 1,000 SIP & Add to Total Investments
+        // 15th of Month Automation
         if (state.lastSipProcess !== currentYearMonth && day >= 15) {
             state.balance -= 1000;
             state.totalInvested += 1000;
@@ -305,6 +311,10 @@
         if (isNaN(amount) || amount <= 0) return;
 
         const currentMonthKey = document.getElementById('month-filter').value;
+
+        if (!state.history[currentMonthKey]) {
+            state.history[currentMonthKey] = [];
+        }
 
         if (type === 'expense') {
             state.balance -= amount;
