@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Finance Tracker</title>
+    <style>
+        :root {
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-color: #1c1c1e;
+            --text-secondary: #8e8e93;
+            --primary: #007aff;
+            --success: #34c759;
+            --danger: #ff3b30;
+            --border: #e5e5ea;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+            padding-bottom: 40px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        h2, h3 {
+            margin-top: 0;
+            font-weight: 700;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .balance-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .balance-item {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+        .balance-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .balance-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .balance-val {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .balance-val.invest {
+            color: var(--primary);
+        }
+
+        .form-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        input, select {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            background: #f8f8f8;
+            -webkit-appearance: none;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button.btn-success { background: var(--success); }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .list-item:last-child { border-bottom: none; }
+
+        .goal-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .goal-item.achieved span {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            flex: none;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+        }
+
+        .month-select {
+            width: 100%;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .log-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- WALLET -->
+    <div class="card">
+        <div class="balance-grid">
+            <div class="balance-item">
+                <div class="balance-label">Available Bank Balance</div>
+                <div class="balance-val" id="display-balance">₹0</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Total Investments Till Now</div>
+                <div class="balance-val invest" id="display-investments">₹0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD TRANSACTION -->
+    <div class="card">
+        <h3>Add Income / Expense</h3>
+        <div class="form-group">
+            <select id="tx-type">
+                <option value="expense">Expense</option>
+                <option value="income">Additional Income</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <input type="number" id="tx-amount" placeholder="Amount (₹)" inputmode="numeric">
+            <input type="text" id="tx-desc" placeholder="Description (e.g., Food)">
+            <button onclick="addTransaction()">Add</button>
+        </div>
+    </div>
+
+    <!-- PRIORITY GOALS -->
+    <div class="card">
+        <h3>Financial Goals Checklist</h3>
+        <div id="goals-list"></div>
+        <div class="form-group">
+            <input type="text" id="new-goal-text" placeholder="Add next milestone goal...">
+            <button class="btn-success" onclick="addGoal()">Add</button>
+        </div>
+    </div>
+
+    <!-- MONTHLY HISTORY -->
+    <div class="card">
+        <h3>Monthly Breakdown</h3>
+        <select id="month-filter" class="month-select" onchange="renderHistory()">
+            <option value="May 2026">May 2026</option>
+            <option value="April 2026">April 2026</option>
+            <option value="March 2026">March 2026</option>
+            <option value="February 2026">February 2026</option>
+            <option value="January 2026">January 2026</option>
+        </select>
+        <div id="history-list"></div>
+    </div>
+
+</div>
+
+<script>
+    // Initializing state with your real historical tracking data
+    const defaultState = {
+        balance: 50768,
+        totalInvested: 8000,
+        lastSalaryProcess: "2026-05", // To avoid repeating standard inputs on the same month
+        lastSipProcess: "2026-05",
+        goals: [
+            { id: 1, text: "Save up for emergency fund", done: false },
+            { id: 2, text: "Complete Goa trip payments", done: true }
+        ],
+        history: {
+            "January 2026": [
+                { type: "income", amount: 14000, desc: "Monthly Salary" },
+                { type: "investment", amount: 1000, desc: "SIP Deduction" },
+                { type: "expense", amount: 1390, desc: "Combined January Expenses" }
+            ],
+            "February 2026": [
+                { type: "income", amount: 14000, desc: "Monthly Salary" },
+                { type: "investment", amount: 1000, desc: "SIP Deduction" },
+                { type: "expense", amount: 1290, desc: "Combined February Expenses" }
+            ],
+            "March 2026": [
+                { type: "income", amount: 14000, desc: "Monthly Salary" },
+                { type: "investment", amount: 1000, desc: "SIP Deduction" },
+                { type: "expense", amount: 8855, desc: "Combined March Expenses" },
+                { type: "expense", amount: 2400, desc: "Goa Advance Payment" }
+            ],
+            "April 2026": [
+                { type: "income", amount: 14000, desc: "Monthly Salary" },
+                { type: "investment", amount: 1000, desc: "SIP Deduction" },
+                { type: "expense", amount: 1407, desc: "Combined April Expenses" }
+            ],
+            "May 2026": [
+                { type: "income", amount: 14000, desc: "Monthly Salary" },
+                { type: "expense", amount: 500, desc: "Expense" },
+                { type: "expense", amount: 10660, desc: "Goa Main Settlement" }
+            ]
+        }
+    };
+
+    let state = JSON.parse(localStorage.getItem('my_budget_data')) || defaultState;
+
+    function saveState() {
+        localStorage.setItem('my_budget_data', JSON.stringify(state));
+        updateUI();
+    }
+
+    function checkAutomations() {
+        const today = new Date();
+        const currentYearMonth = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0');
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const currentMonthKey = monthNames[today.getMonth()] + " " + today.getFullYear();
+        const day = today.getDate();
+
+        if (!state.history[currentMonthKey]) {
+            state.history[currentMonthKey] = [];
+        }
+
+        // 1st of Month Automation: Add 14,000 Income
+        if (state.lastSalaryProcess !== currentYearMonth && day >= 1) {
+            state.balance += 14000;
+            state.history[currentMonthKey].unshift({
+                type: "income",
+                amount: 14000,
+                desc: "Automated Monthly Salary"
+            });
+            state.lastSalaryProcess = currentYearMonth;
+            saveState();
+        }
+
+        // 15th of Month Automation: Deduct 1,000 SIP & Add to Total Investments
+        if (state.lastSipProcess !== currentYearMonth && day >= 15) {
+            state.balance -= 1000;
+            state.totalInvested += 1000;
+            state.history[currentMonthKey].unshift({
+                type: "investment",
+                amount: 1000,
+                desc: "Automated SIP Deduction"
+            });
+            state.lastSipProcess = currentYearMonth;
+            saveState();
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('display-balance').innerText = "₹" + state.balance.toLocaleString('en-IN');
+        document.getElementById('display-investments').innerText = "₹" + state.totalInvested.toLocaleString('en-IN');
+        renderGoals();
+        renderHistory();
+    }
+
+    function addTransaction() {
+        const type = document.getElementById('tx-type').value;
+        const amount = parseFloat(document.getElementById('tx-amount').value);
+        const desc = document.getElementById('tx-desc').value.trim() || (type === 'expense' ? 'Expense' : 'Income');
+        
+        if (isNaN(amount) || amount <= 0) return;
+
+        const currentMonthKey = document.getElementById('month-filter').value;
+
+        if (type === 'expense') {
+            state.balance -= amount;
+            state.history[currentMonthKey].unshift({ type, amount, desc });
+        } else if (type === 'income') {
+            state.balance += amount;
+            state.history[currentMonthKey].unshift({ type, amount, desc });
+        }
+
+        document.getElementById('tx-amount').value = '';
+        document.getElementById('tx-desc').value = '';
+        saveState();
+    }
+
+    function renderHistory() {
+        const activeMonth = document.getElementById('month-filter').value;
+        const container = document.getElementById('history-list');
+        container.innerHTML = '';
+
+        const monthData = state.history[activeMonth] || [];
+        if (monthData.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-secondary); text-align:center; padding:10px;">No entries logged yet.</div>';
+            return;
+        }
+
+        monthData.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            
+            let prefix = item.type === 'income' ? '+' : '-';
+            let color = item.type === 'income' ? 'var(--success)' : (item.type === 'investment' ? 'var(--primary)' : 'var(--text-color)');
+            
+            div.innerHTML = `
+                <div>
+                    <div>${item.desc}</div>
+                    <span class="log-meta" style="color:${color}">${item.type.toUpperCase()}</span>
+                </div>
+                <div style="font-weight:600; color:${color}">${prefix}₹${item.amount}</div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderGoals() {
+        const container = document.getElementById('goals-list');
+        container.innerHTML = '';
+        state.goals.forEach(goal => {
+            const div = document.createElement('div');
+            div.className = `goal-item ${goal.done ? 'achieved' : ''}`;
+            div.innerHTML = `
+                <input type="checkbox" ${goal.done ? 'checked' : ''} onclick="toggleGoal(${goal.id})">
+                <span>${goal.text}</span>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function addGoal() {
+        const text = document.getElementById('new-goal-text').value.trim();
+        if (!text) return;
+        state.goals.push({
+            id: Date.now(),
+            text: text,
+            done: false
+        });
+        document.getElementById('new-goal-text').value = '';
+        saveState();
+    }
+
+    function toggleGoal(id) {
+        state.goals = state.goals.map(g => g.id === id ? { ...g, done: !g.done } : g);
+        saveState();
+    }
+
+    // Run setup checking rules
+    checkAutomations();
+    updateUI();
+</script>
+
+</body>
+</html>
