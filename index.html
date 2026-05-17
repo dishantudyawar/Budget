@@ -206,10 +206,10 @@
 </div>
 
 <script>
-    // Exact requested math state applied post-SIP deduction today
+    // System setup definition with May expenses correctly deducted from the starting balance
     const baselineData = {
-        balance: 49768,       // 50,768 (yesterday) minus 1,000 (SIP deducted today)
-        totalInvested: 9000,  // 8,000 baseline plus 1,000 (SIP deducted today)
+        balance: 38608,       // 50,768 minus 1,000 (SIP), minus 500 (Exp), minus 10,660 (Goa)
+        totalInvested: 9000,  // Baseline 8,000 plus 1,000 (May SIP)
         lastSalaryProcess: "2026-05", 
         lastSipProcess: "2026-05",    
         goals: [
@@ -246,16 +246,16 @@
         }
     };
 
-    // Forced fresh storage key to override broken local browser caches
-    let state = JSON.parse(localStorage.getItem('my_brand_new_budget_v2'));
+    // Forced fresh storage version key to apply the clean math update immediately
+    let state = JSON.parse(localStorage.getItem('my_true_budget_v3'));
 
     if (!state) {
         state = baselineData;
-        localStorage.setItem('my_brand_new_budget_v2', JSON.stringify(state));
+        localStorage.setItem('my_true_budget_v3', JSON.stringify(state));
     }
 
     function saveState() {
-        localStorage.setItem('my_brand_new_budget_v2', JSON.stringify(state));
+        localStorage.setItem('my_true_budget_v3', JSON.stringify(state));
         updateUI();
     }
 
@@ -270,7 +270,7 @@
             state.history[currentMonthKey] = [];
         }
 
-        // 1st of Month Salary Automation (Starts running on June 1st)
+        // 1st of Month Salary Automation (Starts on June 1st)
         if (state.lastSalaryProcess !== currentYearMonth && day >= 1) {
             state.balance += 14000;
             state.history[currentMonthKey].unshift({
@@ -282,7 +282,7 @@
             saveState();
         }
 
-        // 15th of Month SIP Automation (Starts running on June 15th)
+        // 15th of Month SIP Automation (Starts on June 15th)
         if (state.lastSipProcess !== currentYearMonth && day >= 15) {
             state.balance -= 1000;
             state.totalInvested += 1000;
