@@ -113,6 +113,25 @@
         }
         .list-item:last-child { border-bottom: none; }
 
+        .list-right-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .btn-delete {
+            background: none;
+            color: var(--text-secondary);
+            border: none;
+            padding: 4px 8px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: normal;
+        }
+        .btn-delete:active {
+            color: var(--danger);
+        }
+
         .goal-item {
             display: flex;
             align-items: center;
@@ -206,10 +225,9 @@
 </div>
 
 <script>
-    // System setup definition with May expenses correctly deducted from the starting balance
     const baselineData = {
-        balance: 38608,       // 50,768 minus 1,000 (SIP), minus 500 (Exp), minus 10,660 (Goa)
-        totalInvested: 9000,  // Baseline 8,000 plus 1,000 (May SIP)
+        balance: 38608,       
+        totalInvested: 9000,  
         lastSalaryProcess: "2026-05", 
         lastSipProcess: "2026-05",    
         goals: [
@@ -218,44 +236,43 @@
         ],
         history: {
             "January 2026": [
-                { type: "income", amount: 14000, desc: "Monthly Salary" },
-                { type: "investment", amount: 1000, desc: "SIP Deduction" },
-                { type: "expense", amount: 1390, desc: "Combined January Expenses" }
+                { id: 101, type: "income", amount: 14000, desc: "Monthly Salary" },
+                { id: 102, type: "investment", amount: 1000, desc: "SIP Deduction" },
+                { id: 103, type: "expense", amount: 1390, desc: "Combined January Expenses" }
             ],
             "February 2026": [
-                { type: "income", amount: 14000, desc: "Monthly Salary" },
-                { type: "investment", amount: 1000, desc: "SIP Deduction" },
-                { type: "expense", amount: 1290, desc: "Combined February Expenses" }
+                { id: 201, type: "income", amount: 14000, desc: "Monthly Salary" },
+                { id: 202, type: "investment", amount: 1000, desc: "SIP Deduction" },
+                { id: 203, type: "expense", amount: 1290, desc: "Combined February Expenses" }
             ],
             "March 2026": [
-                { type: "income", amount: 14000, desc: "Monthly Salary" },
-                { type: "investment", amount: 1000, desc: "SIP Deduction" },
-                { type: "expense", amount: 8855, desc: "Combined March Expenses" },
-                { type: "expense", amount: 2400, desc: "Goa Advance Payment" }
+                { id: 301, type: "income", amount: 14000, desc: "Monthly Salary" },
+                { id: 302, type: "investment", amount: 1000, desc: "SIP Deduction" },
+                { id: 303, type: "expense", amount: 8855, desc: "Combined March Expenses" },
+                { id: 304, type: "expense", amount: 2400, desc: "Goa Advance Payment" }
             ],
             "April 2026": [
-                { type: "income", amount: 14000, desc: "Monthly Salary" },
-                { type: "investment", amount: 1000, desc: "SIP Deduction" },
-                { type: "expense", amount: 1407, desc: "Combined April Expenses" }
+                { id: 401, type: "income", amount: 14000, desc: "Monthly Salary" },
+                { id: 402, type: "investment", amount: 1000, desc: "SIP Deduction" },
+                { id: 403, type: "expense", amount: 1407, desc: "Combined April Expenses" }
             ],
             "May 2026": [
-                { type: "investment", amount: 1000, desc: "Automated SIP Deduction (May 15th)" },
-                { type: "expense", amount: 500, desc: "Expense" },
-                { type: "expense", amount: 10660, desc: "Goa Main Settlement" }
+                { id: 501, type: "investment", amount: 1000, desc: "Automated SIP Deduction (May 15th)" },
+                { id: 502, type: "expense", amount: 500, desc: "Expense" },
+                { id: 503, type: "expense", amount: 10660, desc: "Goa Main Settlement" }
             ]
         }
     };
 
-    // Forced fresh storage version key to apply the clean math update immediately
-    let state = JSON.parse(localStorage.getItem('my_true_budget_v3'));
+    let state = JSON.parse(localStorage.getItem('my_true_budget_v4'));
 
     if (!state) {
         state = baselineData;
-        localStorage.setItem('my_true_budget_v3', JSON.stringify(state));
+        localStorage.setItem('my_true_budget_v4', JSON.stringify(state));
     }
 
     function saveState() {
-        localStorage.setItem('my_true_budget_v3', JSON.stringify(state));
+        localStorage.setItem('my_true_budget_v4', JSON.stringify(state));
         updateUI();
     }
 
@@ -270,10 +287,11 @@
             state.history[currentMonthKey] = [];
         }
 
-        // 1st of Month Salary Automation (Starts on June 1st)
+        // 1st of Month Salary Automation
         if (state.lastSalaryProcess !== currentYearMonth && day >= 1) {
             state.balance += 14000;
             state.history[currentMonthKey].unshift({
+                id: Date.now() + 1,
                 type: "income",
                 amount: 14000,
                 desc: "Automated Monthly Salary"
@@ -282,11 +300,12 @@
             saveState();
         }
 
-        // 15th of Month SIP Automation (Starts on June 15th)
+        // 15th of Month SIP Automation
         if (state.lastSipProcess !== currentYearMonth && day >= 15) {
             state.balance -= 1000;
             state.totalInvested += 1000;
             state.history[currentMonthKey].unshift({
+                id: Date.now() + 2,
                 type: "investment",
                 amount: 1000,
                 desc: "Automated SIP Deduction"
@@ -318,14 +337,43 @@
 
         if (type === 'expense') {
             state.balance -= amount;
-            state.history[currentMonthKey].unshift({ type, amount, desc });
         } else if (type === 'income') {
             state.balance += amount;
-            state.history[currentMonthKey].unshift({ type, amount, desc });
         }
+
+        state.history[currentMonthKey].unshift({
+            id: Date.now(),
+            type,
+            amount,
+            desc
+        });
 
         document.getElementById('tx-amount').value = '';
         document.getElementById('tx-desc').value = '';
+        saveState();
+    }
+
+    function deleteTransaction(id, monthKey) {
+        if (!state.history[monthKey]) return;
+
+        // Find the index of the transaction to delete
+        const txIndex = state.history[monthKey].findIndex(item => item.id === id);
+        if (txIndex === -1) return;
+
+        const tx = state.history[monthKey][txIndex];
+
+        // Reverse financial impact
+        if (tx.type === 'expense') {
+            state.balance += tx.amount;
+        } else if (tx.type === 'income') {
+            state.balance -= tx.amount;
+        } else if (tx.type === 'investment') {
+            state.balance += tx.amount;
+            state.totalInvested -= tx.amount;
+        }
+
+        // Remove from list array
+        state.history[monthKey].splice(txIndex, 1);
         saveState();
     }
 
@@ -352,7 +400,10 @@
                     <div>${item.desc}</div>
                     <span class="log-meta" style="color:${color}">${item.type.toUpperCase()}</span>
                 </div>
-                <div style="font-weight:600; color:${color}">${prefix}₹${item.amount}</div>
+                <div class="list-right-group">
+                    <div style="font-weight:600; color:${color}">${prefix}₹${item.amount}</div>
+                    <button class="btn-delete" onclick="deleteTransaction(${item.id}, '${activeMonth}')">✕</button>
+                </div>
             `;
             container.appendChild(div);
         });
